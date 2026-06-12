@@ -1,0 +1,654 @@
+================================================================================
+PIPELINE FOR AI-DRIVEN TARGET DISCOVERY IN PULMONARY FIBROSIS
+================================================================================
+
+Author: Generated for Xiao
+Date: June 2026
+Purpose: Identify therapeutic targets on alveolar epithelial cells (AT2 cells and
+         injury-activated alveolar progenitors) whose activation promotes
+         SUCCESSFUL epithelial regeneration and resolution of fibrosis.
+         The FGF10/FGFR2b axis is the positive control, validated in vivo by the
+         observation that Fgf10-deficient mice develop fibrosis more readily.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. Overview and Rationale (incl. the conceptual inversion vs. the cardiac pipeline)
+2. Phase 1: Data Acquisition and Preprocessing (human + mouse)
+3. Phase 2: Define Target Phenotypes (regeneration-success vs. arrested-transitional)
+4. Phase 3: Ligand-Receptor Analysis (NicheNet / CellChat, cross-species)
+5. Phase 4: Machine Learning Model (Geneformer fine-tuning + in silico perturbation)
+6. Phase 5: Cross-Species Validation and Prioritization
+7. Running This Pipeline with Claude Code
+8. Available Tools and Resources
+9. Key References
+
+================================================================================
+1. OVERVIEW AND RATIONALE
+================================================================================
+
+GOAL: Identify receptors on alveolar epithelial progenitors whose activation:
+  - Maintains/expands functional AT2 cells (alveolar stem cells)
+  - Drives productive AT2 -> AT1 differentiation (alveolar regeneration)
+  - Prevents arrest in the pathological transitional state
+  - Suppresses fibroblast-to-myofibroblast conversion (indirectly, via epithelium)
+
+BIOLOGICAL CONTEXT:
+  - In IPF/PF-ILD, repeated AT2 injury + failed regeneration drives fibrosis
+  - FGF10 from the stromal niche (alveolar fibroblasts, ASMC, myofibroblasts)
+    signals through FGFR2b on epithelium to promote AT2 survival and repair
+  - FGF10/FGFR2b PROMOTES resolution; loss of FGF10 PROMOTES fibrosis
+  - Therapeutic logic: find more "FGF10-like" agonizable receptors on epithelium
+
+** THE CONCEPTUAL INVERSION (READ THIS FIRST) **
+--------------------------------------------------------------------------------
+This pipeline reuses the architecture of the epicardial/MI pipeline, BUT the
+biology runs in the OPPOSITE direction. Do not copy the cardiac gene lists or
+the perturbation interpretation verbatim.
+
+  CARDIAC PIPELINE (epicardium):
+    - Proliferation + EMT of epicardium = THERAPEUTIC GOAL (repair)
+    - FGF10 = ACTIVATOR of a beneficial program
+    - "Quiescent -> activated" is the GOOD transition
+    - Receptor whose DELETION blocks activation = target to AGONIZE
+
+  PULMONARY FIBROSIS PIPELINE (alveolar epithelium):
+    - Proliferation + partial-EMT + transitional arrest = THE DISEASE
+    - FGF10 = PROTECTIVE / pro-regenerative factor
+    - "Successful AT2 -> AT1 regeneration" is the GOOD transition
+    - "AT2 -> arrested Krt8+/basaloid state" is the BAD transition
+    - Receptor whose OVEREXPRESSION pushes cells toward regeneration = target
+    - Equivalently: receptor whose DELETION pushes cells toward disease
+
+  => The phenotype label, the geneset of interest, and the SIGN of the in silico
+     perturbation readout all flip relative to the cardiac pipeline.
+
+SENDER / RECEIVER FRAMEWORK:
+  - Sender cells (FGF10 / niche signal source):
+      Alveolar (lipo)fibroblasts, airway smooth muscle cells, myofibroblasts,
+      profibrotic macrophages
+  - Receiver cells (your target population):
+      AT2 cells and injury-activated alveolar progenitors (FGFR2b+)
+  - Goal: find receptors on epithelium that, when engaged, bias cells toward
+    completed regeneration rather than transitional arrest
+
+POSITIVE CONTROL: FGF10 -> FGFR2 (FGFR2b isoform). Must rank highly throughout.
+  In silico Fgf10/Fgfr2b deletion should shift cells toward the diseased state
+  (this is the in silico equivalent of the Fgf10-deficient mouse phenotype).
+
+OPTIONAL PARALLEL ARM (B) — ANTAGONIST DISCOVERY:
+  Run the same machinery with senders/receivers configured to find drivers of the
+  PATHOLOGICAL program (e.g., fibroblast -> myofibroblast; epithelium -> basaloid)
+  that you would want to BLOCK. Positive controls there: TGFBR1/2, AXL, etc.
+  Build Arm (A) first; (B) reuses the same code with different labels/genesets.
+
+================================================================================
+2. PHASE 1: DATA ACQUISITION AND PREPROCESSING
+================================================================================
+
+2.1 DATASETS (HUMAN + MOUSE)
+--------------------------------------------------------------------------------
+
+HUMAN IPF/ILD ATLASES (disease-state anchor + translation):
+
+A) Adams et al. 2020 (Science Advances) — GSE136831
+   - Kaminski/Yale; ~312,928 cells; IPF + COPD + control distal lung
+   - Defines "aberrant basaloid" (KRT5-/KRT17+) cells at myofibroblast foci edge
+   - Explore at: https://www.ipfcellatlas.com
+   - GEO: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE136831
+
+B) Habermann et al. 2020 (Science Advances) — GSE135893
+   - Kropski/Vanderbilt; 114,396 cells; 20 PF + 10 control; 31 cell types
+   - Defines KRT5-/KRT17+ pathologic ECM-producing epithelial population
+   - GEO: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE135893
+
+C) (Optional) Morse et al. 2019 — GSE128033; Sheppard/UCSF — GSE132771
+   - Additional IPF cohorts for robustness / DE replication
+
+D) Healthy reference (AT2/AT1 anchoring + label transfer):
+   - Integrated Human Lung Cell Atlas (Sikkema et al. 2023, Nat Med), via CELLxGENE
+   - CELLxGENE: https://cellxgene.cziscience.com/
+
+MOUSE FIBROSIS DATASETS (time course + transitional-state resolution):
+
+E) Strunz et al. 2020 (Nature Communications) — GSE141259  *** PRIMARY MOUSE SET ***
+   - Bleomycin whole-lung time course: PBS, d3, d7, d10, d14, d21, d28; 28 cell types
+   - Defines the Krt8+ ADI (alveolar differentiation intermediate) transitional state
+   - Already includes cell-cell communication of Krt8+ ADI with mesenchyme/macrophages
+   - This is the temporal analog of the cardiac "Forte" dataset
+   - GEO: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE141259
+
+F) Kobayashi et al. 2020 (Nat Cell Biol) — GSE141634   (PATS transitional state)
+G) Choi et al. 2020 (Cell Stem Cell)   — GSE145031     (DATPs transitional state)
+   - Use E/F/G to sharply label the "completing" vs "arrested" epithelial trajectory
+
+STRATEGY: Mouse provides the time course, lineage/labeling, and a clean
+regeneration-success vs. arrest contrast. Human provides the disease-specific
+aberrant-basaloid endpoint and direct translational relevance. Conserved hits
+(top-ranked in BOTH species) are the highest-confidence candidates.
+
+2.2 DIRECTORY STRUCTURE + DOWNLOAD
+--------------------------------------------------------------------------------
+```bash
+mkdir -p data/human/adams_gse136831
+mkdir -p data/human/habermann_gse135893
+mkdir -p data/mouse/strunz_gse141259
+mkdir -p data/mouse/kobayashi_gse141634
+mkdir -p data/mouse/choi_gse145031
+mkdir -p results/{qc,markers,nichenet,cellchat,geneformer,figures}
+
+# Mouse time course (Strunz)
+cd data/mouse/strunz_gse141259
+wget "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE141nnn/GSE141259/suppl/GSE141259_RAW.tar"
+tar -xvf GSE141259_RAW.tar
+
+# Human atlases (Adams / Habermann) — download processed objects from GEO suppl
+# or the IPF Cell Atlas portal; many are provided as .rds / .h5ad
+cd ../../human/adams_gse136831
+wget "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE136nnn/GSE136831/suppl/"  # browse
+
+# Human healthy reference (HLCA) — download .h5ad from CELLxGENE collections
+```
+
+2.3 STANDARD scRNA-seq PROCESSING (per dataset)
+--------------------------------------------------------------------------------
+```R
+library(Seurat)
+library(harmony)
+
+# ---- generic QC (note: mouse mito = "^mt-", human mito = "^MT-") ----
+process_one <- function(counts, mito_pattern, batch_key = NULL) {
+  obj <- CreateSeuratObject(counts = counts)
+  obj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = mito_pattern)
+  # Epithelium is fragile; keep filters permissive enough to retain AT2/AT1
+  obj <- subset(obj, subset = nFeature_RNA > 200 &
+                              nFeature_RNA < 7000 &
+                              percent.mt < 20)
+  obj <- SCTransform(obj, verbose = FALSE)
+  obj <- RunPCA(obj)
+  if (!is.null(batch_key)) obj <- RunHarmony(obj, group.by.vars = batch_key)
+  red <- if (!is.null(batch_key)) "harmony" else "pca"
+  obj <- RunUMAP(obj, reduction = red, dims = 1:30)
+  obj <- FindNeighbors(obj, reduction = red, dims = 1:30)
+  obj <- FindClusters(obj, resolution = 0.5)
+  obj
+}
+```
+
+NOTE ON EPITHELIAL UNDERSAMPLING: whole-lung dissociation underrepresents and
+stresses epithelium. Where the original study provides EpCAM+/sorted epithelial
+fractions (or use Kobayashi/Choi), prefer those for resolving the RECEIVER
+trajectory. Whole-lung Strunz data is excellent for SENDER characterization.
+
+2.4 EPITHELIAL CELL IDENTIFICATION
+--------------------------------------------------------------------------------
+```R
+# Mouse markers (lowercase). Human = uppercase equivalents.
+at2_markers   <- c("Sftpc","Sftpb","Sftpa1","Lamp3","Etv5","Napsa","Slc34a2")
+at1_markers   <- c("Ager","Pdpn","Hopx","Aqp5","Col4a3","Akap5")
+airway_club   <- c("Scgb1a1","Scgb3a2","Cyp2f2")
+basal_markers <- c("Krt5","Krt15","Trp63")  # human: KRT5, KRT15, TP63
+
+epi_obj <- AddModuleScore(epi_obj, features = list(c(at2_markers, at1_markers)),
+                          name = "Epithelial_Score")
+# Subset epithelium, then subcluster to resolve AT2 / AT1 / transitional states
+```
+
+================================================================================
+3. PHASE 2: DEFINE TARGET PHENOTYPES
+================================================================================
+
+The core difference from the cardiac pipeline: define TWO opposing trajectories
+and contrast them. The "good" axis is the agonism target; the "bad" axis is what
+you are trying to avoid.
+
+3.1 REGENERATION-SUCCESS SIGNATURE (the GOOD state — to promote)
+--------------------------------------------------------------------------------
+```R
+# AT2 maintenance + productive AT1 differentiation
+regen_success <- c(
+  "Sftpc","Etv5","Lamp3",          # healthy AT2 identity
+  "Ager","Pdpn","Hopx","Aqp5",     # AT1 (successful terminal differentiation)
+  "Col4a3","Akap5"                 # AT1 maturation
+)
+epi_obj <- AddModuleScore(epi_obj, features = list(regen_success),
+                          name = "RegenSuccess")
+```
+
+3.2 ARRESTED / ABERRANT TRANSITIONAL SIGNATURE (the BAD state — to avoid)
+--------------------------------------------------------------------------------
+```R
+# Mouse Krt8+ ADI / transitional (Strunz, Kobayashi PATS, Choi DATP)
+mouse_transitional <- c("Krt8","Cldn4","Krt18","Sfn","Cdkn1a","Lgals3","Tpm1")
+
+# Human aberrant basaloid (Adams/Habermann): KRT5-/KRT17+
+human_basaloid <- c("KRT17","TP63","LAMB3","LAMC2","ITGB6","MMP7",
+                    "CDKN2A","SOX9","VIM","FN1")  # NOTE: KRT5/KRT15 NEGATIVE
+
+# Senescence + partial-EMT confounders (track separately, do NOT score as "good")
+senescence  <- c("Cdkn1a","Cdkn2a","Trp53","Glb1")  # human: CDKN1A/2A/TP53
+partial_emt <- c("Vim","Fn1","Cdh2","Snai2","Zeb1")
+
+epi_obj <- AddModuleScore(epi_obj, features = list(mouse_transitional),
+                          name = "Transitional")
+```
+
+** WARNING — THE TRAP FROM THE CARDIAC PIPELINE **
+A naive proliferation/EMT module score will mislabel disease-arrested,
+partial-EMT, senescent transitional cells as "activated/good." Define the target
+phenotype by TRAJECTORY COMPLETION (reaching AT1), not by EMT/proliferation
+magnitude. Proliferation and EMT scores are CONFOUNDERS here, not the goal.
+
+3.3 TEMPORAL / TRAJECTORY LABELING (mouse time course)
+--------------------------------------------------------------------------------
+```R
+# Use Strunz time course + pseudotime (slingshot/monocle3) to order:
+#   AT2  ->  Krt8+ transitional  ->  AT1
+# Define two endpoints of the bifurcation:
+#   COMPLETING = transitional cells progressing to AT1 (RegenSuccess up over time)
+#   ARRESTED   = transitional cells persisting (Transitional/senescence stays high)
+# Cells from late timepoints (d21/d28) still Krt8+ = arrested/disease-like.
+epi_obj$fate_label <- dplyr::case_when(
+  epi_obj$RegenSuccess1 > q_hi & epi_obj$Transitional1 < q_lo ~ "completing",
+  epi_obj$Transitional1 > q_hi & epi_obj$RegenSuccess1 < q_lo ~ "arrested",
+  TRUE ~ "intermediate"
+)
+```
+
+================================================================================
+4. PHASE 3: LIGAND-RECEPTOR ANALYSIS
+================================================================================
+
+Question: which SENDER ligands best explain epithelial cells COMPLETING
+regeneration (reaching AT1) rather than arresting? FGF10 should rank top.
+
+4.1 NicheNet (PRIMARY METHOD) — run per species
+--------------------------------------------------------------------------------
+```R
+library(nichenetr); library(tidyverse)
+
+# Species-specific prior models
+# MOUSE:
+lt_matrix <- readRDS(url("https://zenodo.org/record/3260758/files/ligand_target_matrix_mm.rds"))
+lr_network <- readRDS(url("https://zenodo.org/record/3260758/files/lr_network_mm.rds"))
+# HUMAN: drop the _mm suffix for the human matrices
+
+# Sender = niche; Receiver = AT2 / alveolar progenitors
+sender_celltypes <- c("Fibroblast","Lipofibroblast","AirwaySmoothMuscle",
+                      "Myofibroblast","Macrophage")
+receiver_celltype <- "AT2"
+
+# GENESET OF INTEREST = regeneration-success program (genes UP in "completing")
+# Derive empirically: DE genes up in completing vs arrested epithelium.
+geneset_oi <- regen_success_DE_genes   # from FindMarkers(completing vs arrested)
+
+expressed_receiver <- get_expressed_genes(receiver_celltype, epi_obj, pct = 0.10)
+expressed_sender   <- unique(unlist(lapply(sender_celltypes, function(ct)
+                        get_expressed_genes(ct, sender_obj, pct = 0.10))))
+background_genes   <- expressed_receiver
+
+potential_ligands <- lr_network %>%
+  filter(from %in% expressed_sender & to %in% expressed_receiver) %>%
+  pull(from) %>% unique()
+
+ligand_activities <- predict_ligand_activities(
+  geneset = geneset_oi,
+  background_expressed_genes = background_genes,
+  ligand_target_matrix = lt_matrix,
+  potential_ligands = potential_ligands
+) %>% arrange(-aupr_corrected) %>% mutate(rank = row_number())
+
+# POSITIVE CONTROL CHECK — Fgf10 (mouse) / FGF10 (human) should rank near top
+print(ligand_activities %>% filter(test_ligand %in% c("Fgf10","FGF10")))
+
+top_ligands <- ligand_activities %>% top_n(25, aupr_corrected) %>% pull(test_ligand)
+```
+
+4.2 MAP LIGANDS -> EPITHELIAL RECEPTORS (filter to surfaceome)
+--------------------------------------------------------------------------------
+```R
+top_receptors <- lr_network %>%
+  filter(from %in% top_ligands & to %in% expressed_receiver) %>%
+  transmute(ligand = from, receptor = to) %>% distinct()
+
+# Keep cell-surface receptors only (cross-reference Surfaceome / GO:0009986)
+# Track the FGF10 isoform issue: standard Fgfr2 quantification does NOT separate
+# the epithelial IIIb isoform from mesenchymal IIIc. Flag FGFR2b explicitly.
+```
+
+4.3 CellChat (COMPLEMENTARY) — quantify niche -> AT2 communication
+--------------------------------------------------------------------------------
+```R
+library(CellChat)
+cc <- createCellChat(object = combined_obj, group.by = "cell_type")
+cc@DB <- CellChatDB.mouse        # or CellChatDB.human
+cc <- subsetData(cc); cc <- identifyOverExpressedGenes(cc)
+cc <- identifyOverExpressedInteractions(cc)
+cc <- computeCommunProb(cc); cc <- filterCommunication(cc, min.cells = 10)
+cc <- computeCommunProbPathway(cc); cc <- aggregateNet(cc)
+df.net <- subsetCommunication(cc, targets.use = "AT2")   # incoming to AT2
+# Confirm FGF pathway among incoming signals to AT2
+```
+
+================================================================================
+5. PHASE 4: MACHINE LEARNING MODEL (GENEFORMER)
+================================================================================
+
+Classify "completing regeneration" vs "arrested/aberrant transitional", then run
+in silico perturbation to rank receptors by causal importance for the GOOD fate.
+
+5.1 PREPARE DATA (Ensembl IDs required)
+--------------------------------------------------------------------------------
+```python
+import scanpy as sc, pandas as pd
+from geneformer import TranscriptomeTokenizer
+
+adata = sc.read_h5ad("epicardial_lung_epithelium.h5ad")  # AT2/transitional/AT1
+
+# Label: 1 = completing (healthy regen), 0 = arrested (disease-like)
+adata.obs["regen_label"] = adata.obs["fate_label"].map(
+    {"completing": 1, "arrested": 0}
+)
+adata = adata[adata.obs["regen_label"].notna()]
+
+# Convert symbols -> Ensembl IDs (mouse or human biomart map)
+gmap = pd.read_csv("gene_symbol_to_ensembl.csv")
+adata.var["ensembl_id"] = adata.var_names.map(
+    dict(zip(gmap["symbol"], gmap["ensembl_id"])))
+adata = adata[:, adata.var["ensembl_id"].notna()]
+adata.var_names = adata.var["ensembl_id"].values
+
+tk = TranscriptomeTokenizer({"cell_type": "cell_type", "regen_label": "regen_label"},
+                            nproc=4)
+tk.tokenize_data(adata, "./tokenized/", "lung_epi")
+```
+
+5.2 FINE-TUNE: completing vs arrested
+--------------------------------------------------------------------------------
+```python
+from transformers import BertForSequenceClassification, Trainer, TrainingArguments
+from datasets import load_from_disk
+from sklearn.metrics import accuracy_score, f1_score
+import numpy as np
+
+ds = load_from_disk("./tokenized/lung_epi.dataset").train_test_split(0.2, seed=42)
+model = BertForSequenceClassification.from_pretrained(
+    "ctheodoris/Geneformer", num_labels=2)
+
+def metrics(p):
+    preds = np.argmax(p.predictions, axis=1)
+    return {"accuracy": accuracy_score(p.label_ids, preds),
+            "f1": f1_score(p.label_ids, preds)}
+
+args = TrainingArguments(output_dir="./gf_lung/", num_train_epochs=5,
+    per_device_train_batch_size=8, per_device_eval_batch_size=8,
+    warmup_steps=500, weight_decay=0.01, evaluation_strategy="epoch",
+    save_strategy="epoch", load_best_model_at_end=True,
+    metric_for_best_model="f1", logging_steps=100)
+
+Trainer(model=model, args=args, train_dataset=ds["train"],
+        eval_dataset=ds["test"], compute_metrics=metrics).train()
+```
+
+5.3 IN SILICO PERTURBATION (note the SIGN FLIP)
+--------------------------------------------------------------------------------
+```python
+from geneformer import InSilicoPerturber
+
+candidate_receptors = [
+    "FGFR2","FGFR1",           # FGF axis (positive control; FGFR2b)
+    "EGFR","ERBB2","ERBB3","MET","IGF1R","AXL",
+    "BMPR1A","BMPR2","ACVRL1", # BMP (often pro-regenerative in alveolus)
+    "TGFBR1","TGFBR2",         # pro-fibrotic (expect OPPOSITE direction)
+    "PDGFRA","PDGFRB","NOTCH1","NOTCH2","FZD1","FZD2"
+]
+
+# OVEREXPRESS to find receptors that PUSH cells toward "completing" (label 1)
+perturber = InSilicoPerturber(perturb_type="overexpress",
+    model_type="CellClassifier", num_classes=2, emb_mode="cell",
+    filter_data={"cell_type": ["AT2","transitional"]})
+perturber.perturb_data("./gf_lung/", "./tokenized/lung_epi.dataset",
+    "./results/geneformer/oe/", genes_to_perturb=candidate_receptors)
+
+# Also DELETE to confirm the disease-driving direction
+perturber_del = InSilicoPerturber(perturb_type="delete",
+    model_type="CellClassifier", num_classes=2, emb_mode="cell",
+    filter_data={"cell_type": ["AT2","transitional"]})
+perturber_del.perturb_data("./gf_lung/", "./tokenized/lung_epi.dataset",
+    "./results/geneformer/del/", genes_to_perturb=candidate_receptors)
+```
+
+5.4 RANK + POSITIVE-CONTROL VALIDATION
+--------------------------------------------------------------------------------
+```python
+import pandas as pd
+oe  = pd.read_csv("./results/geneformer/oe/perturbation_stats.csv")
+dele = pd.read_csv("./results/geneformer/del/perturbation_stats.csv")
+
+# OVEREXPRESSION effect: shift toward "completing" (class 1) = good agonist target
+oe["regen_gain"] = oe["prob_class1_perturbed"] - oe["prob_class1_original"]
+oe_sorted = oe.sort_values("regen_gain", ascending=False)
+
+# DELETION effect: shift toward "arrested" (class 0) = required for regeneration
+dele["regen_loss"] = dele["prob_class1_perturbed"] - dele["prob_class1_original"]
+
+# *** POSITIVE CONTROL ***  (your Fgf10-KO mouse, in silico)
+#   FGFR2 OVEREXPRESSION  -> strong positive regen_gain (rescue)
+#   FGFR2 DELETION        -> strong negative (pushes to disease) == the KO phenotype
+print("FGFR2 overexpression gain:", oe[oe.gene=="FGFR2"]["regen_gain"].values)
+print("FGFR2 deletion loss:",       dele[dele.gene=="FGFR2"]["regen_loss"].values)
+
+# Top novel agonist candidates = high regen_gain on OE, negative on deletion,
+# EXCLUDING the known positive controls.
+print(oe_sorted.head(15)[["gene","regen_gain"]])
+```
+
+INTERPRETATION:
+  - Best targets: OE increases "completing" probability AND deletion decreases it
+    (consistent causal direction), surface-expressed on AT2, druggable.
+  - TGFBR1/2 should show the OPPOSITE pattern (OE -> arrest) — a useful internal
+    negative-direction control and the seed of Arm (B).
+
+================================================================================
+6. PHASE 5: CROSS-SPECIES VALIDATION AND PRIORITIZATION
+================================================================================
+
+```R
+# Run Phases 3-4 independently in mouse and human.
+mouse_hits <- toupper(top_mouse_receptors)   # orthology-map to human symbols
+human_hits <- top_human_receptors
+
+conserved <- intersect(mouse_hits, human_hits)   # highest-confidence candidates
+```
+
+Final ranked output — annotate each candidate with:
+  - NicheNet rank + CellChat probability (both species)
+  - Geneformer OE regen_gain + deletion consistency
+  - Cross-species conservation (mouse AND human)
+  - AT2 expression specificity (avoid broadly expressed receptors)
+  - Druggability (existing agonists / biologics / RTK class)
+  - Deliverability to AT2 (relevant to AT2-tropic LNP / rFGF10-style agonism)
+
+Flag candidates that are NOT FGF-pathway (novel), conserved, and surface-druggable
+as the priority list for wet-lab validation (organoid AT2->AT1 differentiation,
+bleomycin rescue).
+
+================================================================================
+7. RUNNING THIS PIPELINE WITH CLAUDE CODE
+================================================================================
+
+Claude Code is Anthropic's agentic coding tool that runs in your terminal (or via
+the desktop app). It can read this pipeline, scaffold the repo, write and run the
+R/Python scripts, inspect intermediate outputs, and debug errors iteratively —
+which suits a multi-step bioinformatics pipeline well.
+
+7.1 INSTALL
+--------------------------------------------------------------------------------
+Requires a paid Claude plan (Pro/Max/Team/Enterprise) or a Console account billed
+at API rates; the free tier does not include Claude Code.
+
+  # Option A: native installer (no Node.js needed) — see docs for current command
+  # Option B: npm (requires Node.js 18+). Do NOT use sudo.
+  npm install -g @anthropic-ai/claude-code
+
+  claude --version     # verify install
+  claude doctor        # diagnose environment/auth/config
+  # Windows: use WSL or Git for Windows.
+  # Docs: https://docs.claude.com/en/docs/claude-code/overview
+
+7.2 PROJECT SETUP
+--------------------------------------------------------------------------------
+  cd lung_fibrosis_target_discovery
+  claude            # start an interactive session in the project dir
+  /init             # generates a CLAUDE.md describing the project for the agent
+
+Put a CLAUDE.md at the repo root so the agent has standing context. Suggested:
+
+  # CLAUDE.md
+  ## Project
+  scRNA-seq target discovery for pulmonary fibrosis. Goal: rank epithelial
+  receptors whose AGONISM promotes AT2->AT1 regeneration. FGF10/FGFR2b is the
+  POSITIVE CONTROL. Biology is INVERTED vs a cardiac/epicardial pipeline:
+  EMT/proliferation = disease, not goal. Define target phenotype by trajectory
+  COMPLETION (reaching AT1), never by EMT/proliferation magnitude.
+  ## Environment
+  - R 4.3+ with Seurat v5, harmony, nichenetr, CellChat, slingshot
+  - Python 3.10+ with scanpy, geneformer, transformers, datasets, torch (GPU)
+  - GPU with >=16GB VRAM required for Geneformer fine-tuning
+  ## Data
+  Human: GSE136831 (Adams), GSE135893 (Habermann). Mouse: GSE141259 (Strunz),
+  GSE141634 (Kobayashi), GSE145031 (Choi). Raw under data/, outputs under results/.
+  ## Conventions
+  - Mouse genes lowercase (Fgf10), human uppercase (FGF10).
+  - Keep epithelial QC permissive (AT2 fragile): nFeature 200-7000, mt<20%.
+  - Save figures as PNG, 300 dpi, into results/figures/.
+  ## Guardrails
+  - Never auto-delete data/. Ask before long (>30 min) compute. Pin package versions.
+
+7.3 SUGGESTED WORKING LOOP
+--------------------------------------------------------------------------------
+Drop this pipeline file in the repo (e.g. docs/pipeline.txt) and reference it:
+
+  > Read docs/pipeline.txt and scaffold the repo: scripts/01_download.sh,
+    02_qc.R, 03_phenotype.R, 04_nichenet.R, 05_cellchat.R, 06_geneformer.py,
+    07_crossspecies.R. Stub each with the section's code and a header comment.
+
+  > Run scripts/02_qc.R on the Strunz mouse data and show me the QC plots and
+    cell counts before and after filtering.
+
+  > Implement Phase 2 fate labeling on the epithelial subset. Verify Fgfr2b+
+    AT2 cells separate from Krt8+ arrested cells on UMAP.
+
+  > Run NicheNet (Phase 3) on mouse. Confirm Fgf10 is in the top 10 ligands;
+    if not, debug expressed-gene thresholds and the geneset_oi DE step.
+
+Useful modes:
+  - Plan Mode: have Claude propose the plan before it edits/runs anything.
+  - Headless / automation: run non-interactively for batch steps or CI, e.g.
+      claude -p "Run scripts/02_qc.R for all mouse samples; summarize QC" \
+             --output-format json
+  - Let it self-check against the positive control: tell it "FGF10/FGFR2b is the
+    positive control — flag and stop if FGF10 does not rank highly," so a silent
+    pipeline bug surfaces immediately.
+
+7.4 PRACTICAL NOTES
+--------------------------------------------------------------------------------
+  - Geneformer fine-tuning needs a GPU; run that step on your GPU box/cluster.
+    Claude Code can still write/debug the script anywhere, then you submit the job.
+  - Keep large data out of git (.gitignore data/, results/). Version the scripts.
+  - Review diffs before accepting; treat the agent like a fast junior analyst.
+  - For docs on specific features, see https://docs.claude.com/en/docs/claude-code/overview
+
+================================================================================
+8. AVAILABLE TOOLS AND RESOURCES
+================================================================================
+
+scRNA-seq:        Seurat (R), Scanpy (Python), scVI
+Trajectory:       slingshot, monocle3, CellRank (transitional -> AT1 ordering)
+Cell-cell comm.:  NicheNet, CellChat, CellPhoneDB, LIANA
+Deep learning:    Geneformer (https://huggingface.co/ctheodoris/Geneformer)
+Surfaceome:       in silico human surfaceome (Bausch-Fluck et al.), GO:0009986
+L-R databases:    CellPhoneDB, CellTalkDB, NicheNet prior
+Drug-target:      DrugBank, ChEMBL, Open Targets
+Atlases/portals:  IPF Cell Atlas (ipfcellatlas.com), CELLxGENE, Human Lung Cell Atlas
+
+================================================================================
+9. KEY REFERENCES
+================================================================================
+
+HUMAN IPF SINGLE-CELL ATLASES
+  1. Adams TS, et al. (2020) "Single-cell RNA-seq reveals ectopic and aberrant
+     lung-resident cell populations in IPF." Sci Adv 6:eaba1983. GEO: GSE136831
+  2. Habermann AC, et al. (2020) "Single-cell RNA sequencing reveals profibrotic
+     roles of distinct epithelial and mesenchymal lineages in PF."
+     Sci Adv 6:eaba1972. GEO: GSE135893
+  3. Sikkema L, et al. (2023) "An integrated cell atlas of the human lung in
+     health and disease (HLCA)." Nat Med 29:1563-1577.
+
+MOUSE FIBROSIS / TRANSITIONAL STATES
+  4. Strunz M, et al. (2020) "Alveolar regeneration through a Krt8+ transitional
+     stem cell state that persists in human lung fibrosis."
+     Nat Commun 11:3559. GEO: GSE141259
+  5. Kobayashi Y, et al. (2020) "Persistence of a regeneration-associated,
+     transitional alveolar epithelial cell state in pulmonary fibrosis."
+     Nat Cell Biol 22:934-946. GEO: GSE141634
+  6. Choi J, et al. (2020) "Inflammatory signals induce AT2 cell-derived
+     damage-associated transient progenitors (DATPs)." Cell Stem Cell 27:366-382.
+     GEO: GSE145031
+
+FGF10 BIOLOGY IN LUNG FIBROSIS (POSITIVE CONTROL)
+  7. Gupte VV, et al. (2009) "Overexpression of FGF10 during both inflammatory and
+     fibrotic phases attenuates bleomycin-induced pulmonary fibrosis." AJRCCM.
+  8. Yuan T, et al. (2019) "FGF10-FGFR2B signaling generates basal cells and
+     drives alveolar epithelial regeneration by bronchial epithelial stem cells
+     after lung injury." (FGF10/FGFR2b promotes resolution).
+  9. Chao CM, et al. / El Agha E, et al. — FGF10 in lung development, homeostasis,
+     and repair (reviews; lipofibroblast<->myofibroblast switch in fibrosis).
+ 10. Yuan T, et al. (2022) "FGF10 therapeutic administration promotes mobilization
+     of injury-activated alveolar progenitors in a mouse fibrosis model."
+     Cells 11:2396.
+
+METHODS
+ 11. Browaeys R, et al. (2020) "NicheNet." Nat Methods 17:159-162.
+ 12. Jin S, et al. (2021) "CellChat." Nat Commun 12:1088.
+ 13. Theodoris CV, et al. (2023) "Transfer learning enables predictions in
+     network biology" (Geneformer). Nature 618:616-624.
+
+================================================================================
+SUMMARY CHECKLIST
+================================================================================
+
+[ ] Download human (GSE136831, GSE135893) + mouse (GSE141259, GSE141634, GSE145031)
+[ ] QC each dataset; retain fragile epithelium (permissive filters)
+[ ] Identify AT2 / transitional / AT1; subcluster epithelium
+[ ] Define regeneration-success vs arrested-transitional signatures (NOT EMT/prolif)
+[ ] Pseudotime: order AT2 -> Krt8+ transitional -> AT1; label completing vs arrested
+[ ] NicheNet per species; CONFIRM FGF10/Fgf10 ranks top (positive control)
+[ ] Map top ligands to surface receptors on AT2; flag FGFR2b isoform explicitly
+[ ] Geneformer: classify completing vs arrested
+[ ] In silico OVEREXPRESS (find pro-regen receptors) + DELETE (confirm direction)
+[ ] Validate: FGFR2 OE -> regen gain; FGFR2 deletion -> disease (== Fgf10-KO mouse)
+[ ] Cross-species intersect; prioritize conserved, surface, druggable, AT2-specific
+[ ] (Optional) Run Arm (B) for pro-fibrotic receptors to BLOCK
+
+================================================================================
+NOTES
+================================================================================
+
+- BIOLOGY IS INVERTED vs the cardiac/epicardial pipeline. EMT + proliferation are
+  DISEASE features here, not therapeutic goals. Define targets by trajectory
+  completion to AT1, not by activation magnitude.
+- FGF10 -> FGFR2b is the positive control; the Fgf10-deficient mouse phenotype is
+  the in vivo equivalent of in silico Fgfr2b deletion (should worsen the predicted
+  state). This is the tightest validation loop in the pipeline — lean on it.
+- Sender = stromal niche (alveolar fibroblasts, ASMC, myofibroblasts, macrophages);
+  Receiver = AT2 / injury-activated alveolar progenitors.
+- Watch the FGFR2 IIIb (epithelial) vs IIIc (mesenchymal) isoform issue.
+- Whole-lung dissociation undersamples epithelium; prefer sorted/epithelial-enriched
+  data for the receiver trajectory.
+- GPU with 16GB+ VRAM required for Geneformer fine-tuning.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

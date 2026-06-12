@@ -1,0 +1,6 @@
+data/
+results/
+*.rds
+.Rhistory
+__pycache__/
+.claude/
