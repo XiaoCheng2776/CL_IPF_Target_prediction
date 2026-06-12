@@ -1,0 +1,35 @@
+Loading QC'd objects…
+Epithelial cells from Strunz labels: 17324
+Warning: The following features are not present in the object: Cdh2, not searching for symbol synonyms
+Warning message:
+Found metadata columns with the same names as requested reduction columns: umap_1, umap_2. Consider renaming these metadata column(s) to avoid conflicts with dimensionality reduction embeddings. 
+
+=== Fate label distribution ===
+
+        arrested       completing healthy_baseline     intermediate 
+            2332             2685             1762            10545 
+
+=== Arrested % by timepoint (sanity check; day 28 excluded) ===
+# A tibble: 16 × 4
+# Groups:   time_point [16]
+   time_point fate_label     n   pct
+   <chr>      <chr>      <int> <dbl>
+ 1 day 10     arrested     136  16.7
+ 2 day 11     arrested     166  29.2
+ 3 day 12     arrested     176  19.4
+ 4 day 13     arrested     171  20.8
+ 5 day 15     arrested     126  12.6
+ 6 day 2      arrested      81   7.8
+ 7 day 21     arrested     126  13.8
+ 8 day 3      arrested     179  11.2
+ 9 day 36     arrested      13   0.8
+10 day 4      arrested     233  13.2
+11 day 5      arrested     232  15.8
+12 day 54     arrested       5   1.1
+13 day 6      arrested      80  16.2
+14 day 7      arrested     194  23.5
+15 day 8      arrested     189  29.1
+16 day 9      arrested     223  39.5
+Warning message:
+Found metadata columns with the same names as requested reduction columns: umap_1, umap_2. Consider renaming these metadata column(s) to avoid conflicts with dimensionality reduction embeddings. 
+03_phenotype.R complete.

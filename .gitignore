@@ -1,6 +1,14 @@
 data/
-results/
 *.rds
 .Rhistory
 __pycache__/
 .claude/
+
+# Large binary model weights (>40 MB per file — over GitHub limit)
+results/geneformer/gf_lung/**/model.safetensors
+results/geneformer/gf_lung/model.safetensors
+results/geneformer/gf_lung/**/optimizer.pt
+# HuggingFace tokenized dataset (binary arrow files)
+results/geneformer/tokenized/
+# TensorBoard event logs
+results/geneformer/gf_lung/runs/
