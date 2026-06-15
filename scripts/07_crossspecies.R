@@ -153,65 +153,161 @@ candidates <- candidates %>%
 # =============================================================================
 # 6.  Annotations
 # =============================================================================
-# FGFR2 isoform flag (see CLAUDE.md guardrail)
+# 6b. Therapeutic direction annotation
+# =============================================================================
+# NicheNet/CellChat identify WHICH ligands are signaling to AT2 cells in fibrosis.
+# They do NOT indicate therapeutic direction.  TGFB1 is the most active sender
+# signal but it DRIVES the arrested/Krt8+ state — its receptors are block candidates
+# (antagonize to let AT2 cells escape arrest), not agonist targets.
+# This column separates pro-regenerative agonist candidates from pro-fibrotic
+# block candidates for downstream prioritisation.
+
+# TGFβ-pathway annotation: receptors whose canonical ligand is TGFB1
+# and/or which transduce TGFβ signaling (SMAD2/3 → pEMT, Krt8 upregulation,
+# senescence) in the context of bleomycin/IPF epithelium.
+TGFB_RECEPTORS <- c(
+  "Tgfbr1", "Tgfbr2",   # direct TGFβ serine-kinase receptors (SMAD2/3)
+  "App",                  # TGFB1→APP: top ligand both species; promotes AT2 senescence
+  "Itgav",               # αv integrins activate latent TGFβ (αvβ6 canonical activator)
+  "Itgb6", "Itgb8"       # αvβ6 / αvβ8 — epithelial latent-TGFβ activators
+)
+
+# Receptors with a known pro-fibrotic role independent of TGFβ
+PROFIBROTIC_OTHER <- c(
+  "Axl"   # AXL promotes pEMT/fibrosis; negative control in Geneformer
+)
+
 candidates <- candidates %>%
-  mutate(notes = case_when(
-    receptor == "Fgfr2"  ~ "POSITIVE CONTROL — IIIb (epithelial) vs IIIc (mesenchymal) isoform ambiguity; OE regen_gain negative (ligand-limited, not receptor-limited)",
-    receptor %in% c("Tgfbr1","Tgfbr2") ~ "Expected negative: TGF-β promotes arrested/fibrotic state",
-    receptor == "Axl"    ~ "Pro-fibrotic; expected low OE regen_gain (internal negative control)",
-    TRUE                 ~ NA_character_
-  ))
+  mutate(
+    therapeutic_direction = case_when(
+      # ----- block candidates: TGFβ pathway -----
+      receptor %in% TGFB_RECEPTORS ~ "block_TGFb",
+      receptor %in% PROFIBROTIC_OTHER ~ "block_other",
+
+      # ----- agonist candidates: validated pro-regenerative axes -----
+      # FGFR2b positive control
+      receptor %in% c("Fgfr2", "Fgfr1") ~ "agonist",
+      # Syndecans: heparan-sulfate co-receptors that present FGF10 to FGFR2b;
+      #   also downstream of pro-survival ANGPTL4
+      receptor %in% c("Sdc1", "Sdc4") ~ "agonist",
+      # EGF-family: AREG/HBEGF→EGFR/ERBB2 promotes AT2 proliferation & AT2→AT1
+      receptor %in% c("Egfr", "Erbb2", "Erbb3") ~ "agonist",
+      # HBEGF/AREG co-receptors (tetraspanin web)
+      receptor %in% c("Cd9", "Cd63") ~ "agonist",
+      # WNT: Fzd2 = top Geneformer OE hit (+0.008); WNT promotes AT2 self-renewal
+      receptor == "Fzd2" ~ "agonist",
+      # FGFR2b co-receptor / VEGF axis
+      receptor == "Nrp1" ~ "agonist",
+      # BMP axis: BMP4 maintains AT2 identity in alveolar organoids
+      receptor %in% c("Bmpr1a", "Bmpr2") ~ "agonist_uncertain",
+      # Adm/CGRP receptor: vasculoprotective; direct AT2 role uncertain
+      receptor == "Ramp1" ~ "agonist_uncertain",
+
+      # ----- uncertain: Itgb1 is driven by BOTH ANGPTL4 and TGFB1 -----
+      receptor == "Itgb1" ~ "uncertain",
+      # Notch promotes basaloid fate in fibrotic lung; likely block but not confirmed
+      receptor %in% c("Notch1", "Notch2") ~ "uncertain",
+
+      TRUE ~ "uncertain"
+    ),
+
+    notes = case_when(
+      receptor == "Fgfr2" ~
+        "POSITIVE CONTROL — FGF10→FGFR2b; IIIb (epithelial) vs IIIc (mesenchymal) isoform ambiguity",
+      receptor %in% c("Tgfbr1","Tgfbr2") ~
+        "TGFβ receptor (SMAD2/3) — drives Krt8+/arrested/fibrotic state; BLOCK candidate",
+      receptor == "App" ~
+        "Top ligand = TGFB1 (mouse rank 1, human rank 5); TGFβ→APP promotes AT2 senescence; BLOCK candidate",
+      receptor == "Itgb1" ~
+        "Mixed: ANGPTL4→ITGB1 (pro-survival) AND TGFB1→ITGB1 (pro-fibrotic); resolve with isoform/context data",
+      receptor %in% c("Sdc1","Sdc4") ~
+        "Heparan-sulfate co-receptor; presents FGF10 to FGFR2b (ANGPTL4/LPL ligands); agonist candidate",
+      receptor %in% c("Egfr","Erbb2","Erbb3") ~
+        "AREG/HBEGF→EGFR family; promotes AT2 proliferation and AT2→AT1 transition; agonist candidate",
+      receptor %in% c("Cd9","Cd63") ~
+        "Tetraspanin co-receptor for HBEGF/TIMP1; scaffolds EGFR signaling; agonist candidate",
+      receptor == "Fzd2" ~
+        "WNT receptor; highest Geneformer OE regen_gain (+0.008); WNT promotes AT2 self-renewal",
+      receptor == "Nrp1" ~
+        "FGFR2b co-receptor and VEGFA-axis; mouse NicheNet rank 8; agonist candidate",
+      receptor %in% c("Bmpr1a","Bmpr2") ~
+        "BMP receptor; BMP4 maintains AT2 identity; direction uncertain in fibrotic context",
+      receptor %in% c("Notch1","Notch2") ~
+        "Notch may promote basaloid/arrested fate in IPF epithelium; uncertain/block",
+      receptor == "Axl" ~
+        "Pro-fibrotic (AXL promotes pEMT/mesenchymal transition); BLOCK candidate; GF negative control",
+      receptor == "Ramp1" ~
+        "ADM/CGRP receptor; vasculoprotective; direct AT2 regeneration role uncertain",
+      TRUE ~ NA_character_
+    )
+  )
 
 # =============================================================================
 # 7.  Print and save
 # =============================================================================
 label <- if (has_human_nn) "mouse+human" else "mouse-only"
+
 message(sprintf("\n=== Final candidate ranking (%s) ===", label))
 print(candidates %>%
-        select(receptor, composite_score, species_support,
-               score_nn, score_nn_h, score_cc, score_gf, score_del,
+        select(receptor, composite_score, therapeutic_direction, species_support,
                nn_best_ligand_rank, nn_human_best_rank,
                gf_regen_gain, gf_regen_loss) %>%
         head(20), n = 20)
 
-message("\n=== Top 10 with full evidence ===")
-print(candidates %>%
-        select(receptor, composite_score, species_support,
-               nn_ligands, nn_human_ligands, cc_pathways,
-               gf_regen_gain, gf_regen_loss, notes) %>%
-        head(10), n = 10)
+message("\n=== AGONIST candidates (pro-regenerative; agonism promotes AT2→AT1) ===")
+agonists <- candidates %>%
+  filter(grepl("^agonist", therapeutic_direction)) %>%
+  select(receptor, composite_score, therapeutic_direction, species_support,
+         nn_ligands, nn_human_ligands, gf_regen_gain, gf_regen_loss, notes)
+print(agonists, n = 30)
 
-if (has_human_nn) {
-  message("\n=== Conserved candidates (mouse + human NicheNet) ===")
-  print(candidates %>%
-          filter(species_support == "conserved") %>%
-          select(receptor, composite_score, nn_best_ligand_rank,
-                 nn_human_best_rank, nn_human_ligands, gf_regen_gain), n = 30)
-}
+message("\n=== BLOCK candidates (pro-fibrotic; antagonism may release arrest) ===")
+blocks <- candidates %>%
+  filter(grepl("^block", therapeutic_direction)) %>%
+  select(receptor, composite_score, therapeutic_direction, species_support,
+         nn_ligands, nn_human_ligands, notes)
+print(blocks, n = 20)
+
+message("\n=== UNCERTAIN direction ===")
+print(candidates %>%
+        filter(therapeutic_direction == "uncertain") %>%
+        select(receptor, composite_score, species_support, nn_ligands, notes), n = 20)
 
 write.csv(candidates, file.path(ROOT, "results/candidates_ranked.csv"),
           row.names = FALSE)
 
-# Dot-plot: top 20 with composite score
+# Dot-plot: colour by therapeutic_direction; top 20 by composite score
+dir_palette <- c(
+  agonist          = "#2ca25f",
+  agonist_uncertain = "#99d8c9",
+  block_TGFb       = "#de2d26",
+  block_other      = "#fc9272",
+  uncertain        = "#bdbdbd"
+)
+
 top20 <- candidates %>%
   filter(!is.na(composite_score)) %>%
   slice_head(n = 20) %>%
-  mutate(receptor = fct_reorder(receptor, composite_score),
-         gf_gain_clipped = pmax(gf_regen_gain, -0.02, na.rm = FALSE))
+  mutate(receptor = fct_reorder(receptor, composite_score))
 
 p <- ggplot(top20, aes(x = composite_score, y = receptor)) +
-  geom_point(aes(colour = species_support,
-                 size   = ifelse(is.na(gf_regen_gain), 1, pmax(gf_regen_gain + 0.025, 0.5)))) +
-  scale_colour_manual(values = c(mouse_only = "#2b8cbe", conserved = "#f03b20")) +
+  geom_point(aes(colour = therapeutic_direction,
+                 shape  = species_support,
+                 size   = ifelse(is.na(gf_regen_gain), 2,
+                                 pmax(abs(gf_regen_gain) * 200 + 2, 2)))) +
+  scale_colour_manual(values = dir_palette) +
+  scale_shape_manual(values = c(mouse_only = 16, conserved = 18)) +
   scale_size_continuous(range = c(2, 8)) +
   labs(title    = "Top 20 candidate receptors — mouse IPF",
-       subtitle = "Composite score: NicheNet rank + CellChat prob + Geneformer OE gain + DEL consistency",
+       subtitle = paste0("Green = agonist (promote AT2→AT1)  |  Red = block (antagonize to release arrest)\n",
+                         "Shape: circle = mouse-only, diamond = cross-species conserved"),
        x = "Composite score (0–1)", y = NULL,
-       colour = "Species support", size = "GF regen gain (size)") +
-  theme_bw(base_size = 11)
+       colour = "Therapeutic direction", shape = "Species support") +
+  theme_bw(base_size = 11) +
+  guides(size = "none")
 
 ggsave(file.path(OUT_FIG, "candidates_dotplot.png"),
-       p, width = 9, height = 7, dpi = 300)
+       p, width = 10, height = 7, dpi = 300)
 
 message("07_crossspecies.R complete.")
 message("Output: results/candidates_ranked.csv")
