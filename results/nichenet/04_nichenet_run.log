@@ -3,46 +3,31 @@ replacing previous import ‘e1071::element’ by ‘ggplot2::element’ when lo
 Loading objects…
 1275 expressed receiver genes
 10651 expressed sender genes (pct=0.01 — required for Fgf10 positive control)
-For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
-(default method for FindMarkers) please install the presto package
---------------------------------------------
-install.packages('devtools')
-devtools::install_github('immunogenomics/presto')
---------------------------------------------
-After installation of presto, Seurat will automatically use the more 
-efficient implementation (no further action necessary).
-This message will be shown once per session
-457 genes in geneset_oi (completing+healthy_baseline vs arrested DE)
+508 genes in geneset_oi (completing vs arrested DE, healthy_baseline excluded)
 FGFR2b/AT2 marker genes in geneset_oi: 8/8 — Etv5, Sftpc, Sftpb, Lamp3, Sftpa1, Napsa, Slc34a2, Id2
 180 potential ligands
 Fgf10 receptors in lr_network: Fgfr1, Fgfr2, Fgfr3, Fgfr4, Fgfrl1
   → expressed in AT2 (pct≥0.10): Fgfr2
-Effective geneset (geneset_oi ∩ lt_matrix columns): 46/457 genes (10.1%)  — NicheNet v2 target columns poorly cover AT2 markers
-NOTE: Fgf10 top prior targets are Prl-family genes (mammary artifact in NicheNet v2). AT2 markers Etv5/Sftpc/Sftpb absent from lt_matrix columns. FGFR2b axis validated via Fgf7 (same receptor).
+NOTE: NicheNet v2 prior for Fgf10 is biased toward Prl-family genes (mammary artifact). AT2 markers Etv5/Sftpc/Sftpb absent from lt_matrix target columns.
 
 Top 10 ligands by AUPR_corrected:
 # A tibble: 10 × 6
    test_ligand auroc  aupr aupr_corrected pearson  rank
    <chr>       <dbl> <dbl>          <dbl>   <dbl> <int>
- 1 Tgfb1       0.610 0.414         0.104   0.171      1
- 2 Adm         0.531 0.390         0.0792  0.179      2
- 3 Fgf7        0.531 0.377         0.0671  0.123      3
- 4 Fgf1        0.533 0.366         0.0554  0.0879     4
- 5 Angptl4     0.531 0.365         0.0544  0.127      5
- 6 Pf4         0.530 0.361         0.0508  0.102      6
- 7 Hbegf       0.519 0.359         0.0488  0.0782     7
- 8 Sema3c      0.550 0.359         0.0487  0.0692     8
- 9 Scgb1a1     0.535 0.359         0.0486  0.0709     9
-10 Vegfa       0.518 0.358         0.0479  0.104     10
+ 1 Tgfb1       0.594 0.437         0.105   0.183      1
+ 2 Adm         0.533 0.415         0.0827  0.192      2
+ 3 Fgf7        0.526 0.399         0.0665  0.135      3
+ 4 Vegfa       0.522 0.387         0.0539  0.109      4
+ 5 Fgf1        0.528 0.382         0.0494  0.0935     5
+ 6 Bdnf        0.525 0.377         0.0447  0.0845     6
+ 7 Pf4         0.524 0.375         0.0428  0.0976     7
+ 8 Angptl4     0.520 0.372         0.0396  0.106      8
+ 9 Hbegf       0.510 0.372         0.0394  0.0668     9
+10 Fgf2        0.513 0.371         0.0384  0.0848    10
 
-=== POSITIVE CONTROL: FGFR2b-axis ligands ===
-# A tibble: 3 × 6
-  test_ligand auroc  aupr aupr_corrected pearson  rank
-  <chr>       <dbl> <dbl>          <dbl>   <dbl> <int>
-1 Fgf7        0.531 0.377         0.0671  0.123      3
-2 Fgf1        0.533 0.366         0.0554  0.0879     4
-3 Fgf10       0.504 0.336         0.0258  0.0713    48
-Fgf10 individual rank = 48
-Fgf7 rank = 3  [FGFR2b-axis positive control PASSED]
+=== POSITIVE CONTROL: Fgf10/FGFR2b axis ===
+Fgf10 rank = 27  |  Fgf7 rank = 3  |  Fgf1 rank = 5
+Effective geneset (geneset_oi ∩ lt_matrix): 56 / 508 genes
+Fgf10 rank = 27  |  Fgf7 rank = 3  [POSITIVE CONTROL PASSED]
 FGFR2 isoform flag: standard Fgfr2 expression does NOT separate IIIb (epithelial) from IIIc (mesenchymal). Annotate in outputs.
 04_nichenet.R complete.

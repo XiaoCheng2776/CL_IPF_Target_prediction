@@ -19,8 +19,8 @@ replacing previous import ‘e1071::element’ by ‘ggplot2::element’ when lo
 Warning: Feature names cannot have underscores ('_'), replacing with dashes ('-')
 Warning: Data is of class dgTMatrix. Coercing to dgCMatrix.
             used  (Mb) gc trigger    (Mb)   max used    (Mb)
-Ncells   5813455 310.5   10845864   579.3    8779408   468.9
-Vcells 100115456 763.9 1423912737 10863.6 1736830486 13251.0
+Ncells   5813193 310.5   10845105   579.2    8779146   468.9
+Vcells 100114957 763.9 1423911909 10863.6 1736829987 13251.0
   After QC: 25844 cells
 NicheNet groups: AT1=760 | AT2=4903 | Basaloid=1608 | Sender=18573
 geneset_oi: 644 genes
@@ -30,8 +30,8 @@ Loading NicheNet v2 human priors…
 Warning message:
 In asMethod(object) :
   sparse->dense coercion: allocating vector of size 1.2 GiB
-  AT2 expressed: 6977 | Sender expressed: 6547
-  Potential ligands: 177
+  AT2 expressed: 6977 | Sender expressed: 13256 (pct=0.01 for FGF7/FGF10)
+  Potential ligands: 361
   geneset_oi covered by lt_matrix: 49 / 644
 Scoring ligand activities…
 
@@ -46,41 +46,41 @@ Top 15 human ligands (Habermann):
  5 TGFB1               0.0615     5
  6 HBEGF               0.0587     6
  7 VEGFA               0.0567     7
- 8 OSM                 0.0538     8
- 9 TIMP1               0.0523     9
-10 LPL                 0.0511    10
-11 AREG                0.0500    11
-12 RARRES1             0.0490    12
-13 CDCP1               0.0480    13
-14 IL1RN               0.0477    14
-15 SERPING1            0.0474    15
+ 8 IL1A                0.0561     8
+ 9 OSM                 0.0538     9
+10 TIMP1               0.0523    10
+11 WNT5A               0.0518    11
+12 IGF2                0.0517    12
+13 HP                  0.0517    13
+14 LPL                 0.0511    14
+15 PCSK9               0.0509    15
 
-FGFR2b-family (human): FGF7 rank= 16
-NOTE: FGFR2b family rank 16 > 15. Habermann is IPF-only (no healthy AT2 reference); geneset_oi is AT2 vs KRT17+ which may emphasise different pathways.
+=== POSITIVE CONTROL (human): FGF10 rank = 155 | FGF7 rank = 24 | FGF1 rank = Inf
+POSITIVE CONTROL PASSED (human): FGF7 rank=24, FGF10 rank=155
 
 Top receptor pairs (human, first 20):
 # A tibble: 20 × 2
    ligand  receptor
    <chr>   <chr>   
- 1 ADAM17  MUC1    
- 2 ADAM17  NOTCH1  
- 3 ADAM17  ITGB1   
- 4 ADAM17  IL6R    
- 5 ADAM17  ERBB4   
- 6 ADAM17  NOTCH2  
- 7 ANG     EGFR    
- 8 ANG     PLXNB2  
- 9 ANGPTL4 SDC1    
-10 ANGPTL4 SDC2    
-11 ANGPTL4 SDC4    
-12 ANGPTL4 LPL     
-13 ANGPTL4 ITGB1   
-14 ANGPTL4 ITGAV   
-15 AREG    EGFR    
-16 AREG    ERBB2   
-17 AREG    ERBB3   
-18 CD55    ADGRE5  
-19 CDCP1   EGFR    
-20 CSF1    CSF3R   
+ 1 ANGPTL4 SDC1    
+ 2 ANGPTL4 SDC2    
+ 3 ANGPTL4 SDC4    
+ 4 ANGPTL4 LPL     
+ 5 ANGPTL4 ITGB1   
+ 6 ANGPTL4 ITGAV   
+ 7 AREG    EGFR    
+ 8 AREG    ERBB2   
+ 9 AREG    ERBB3   
+10 BMP2    BMPR2   
+11 BMP2    BMPR1A  
+12 CD55    ADGRE5  
+13 CDCP1   EGFR    
+14 CSF1    CSF3R   
+15 CX3CL1  ITGAV   
+16 CX3CL1  ITGB1   
+17 FGF7    FGFR2   
+18 FGF7    FGFR1   
+19 FGF7    FGFR3   
+20 HBEGF   EGFR    
 
 08_human_nichenet.R complete. Outputs: results/nichenet_human/

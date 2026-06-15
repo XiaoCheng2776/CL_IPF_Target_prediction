@@ -69,6 +69,15 @@ CANDIDATE_RECEPTORS = [
     "Pdgfra", "Pdgfrb",
     "Notch1", "Notch2",
     "Fzd1", "Fzd2",
+    # Cross-species conserved hits (added after human Habermann validation)
+    "Itgb1",                     # ANGPTL4/TGFB1 → ITGB1 (top composite score, both species)
+    "App",                       # TGFB1 → APP (conserved; #2 composite before GF)
+    "Sdc1", "Sdc4",              # ANGPTL4/LPL → SDC1/SDC4 (conserved)
+    "Cd9",                       # HBEGF → CD9 (conserved)
+    "Cd63",                      # TIMP1 → CD63 (conserved)
+    "Osmr",                      # OSM → OSMR (conserved fibroblast→AT2 signal)
+    "Nrp1",                      # mouse NicheNet rank 8; FGFR2b co-receptor
+    "Il6st",                     # OSM/IL6 co-receptor; conserved
 ]
 
 # =============================================================================
@@ -241,7 +250,7 @@ ds_all = load_from_disk(str(TOK_DATASET))
 log.info(f"Tokenised dataset: {len(ds_all)} cells, columns: {ds_all.column_names}")
 ds     = ds_all.train_test_split(test_size=0.2, seed=42)
 
-SAVED_MODEL = MODEL_DIR / "pytorch_model.bin"
+SAVED_MODEL = MODEL_DIR / "model.safetensors"
 if not SAVED_MODEL.exists():
     from geneformer.classifier import Classifier
 

@@ -1,0 +1,107 @@
+2026-06-12 17:32:10,276 INFO Gene map: 17127 mouse → human 1:1 orthologs
+2026-06-12 17:32:10,418 INFO Loaded raw AnnData: 17324 × 18952
+2026-06-12 17:32:10,472 INFO Cells after fate filter: 5017  (completing=2685, arrested=2332)
+2026-06-12 17:32:10,532 INFO Genes with human ENSG in Geneformer V1 vocab: 13287/18952
+2026-06-12 17:32:10,533 INFO Candidate receptors in vocab: 28/28  (['Acvrl1', 'App', 'Axl', 'Bmpr1a', 'Bmpr2', 'Cd63', 'Cd9', 'Egfr', 'Erbb2', 'Erbb3', 'Fgfr1', 'Fgfr2', 'Fzd1', 'Fzd2', 'Igf1r', 'Il6st', 'Itgb1', 'Met', 'Notch1', 'Notch2', 'Nrp1', 'Osmr', 'Pdgfra', 'Pdgfrb', 'Sdc1', 'Sdc4', 'Tgfbr1', 'Tgfbr2'])
+2026-06-12 17:32:10,534 INFO Tokenised dataset found; skipping.
+2026-06-12 17:32:10,542 INFO Tokenised dataset: 5017 cells, columns: ['input_ids', 'label', 'cell_type', 'length']
+2026-06-12 17:32:10,544 INFO Fine-tuned model found at /home/shiqi/CL_IPF_Target_prediction/results/geneformer/gf_lung; skipping training.
+2026-06-12 17:32:12,543 INFO Loading fine-tuned model for perturbation  (device=cuda) …
+2026-06-12 17:32:13,450 INFO Computing baseline probabilities for 5017 cells …
+2026-06-12 17:32:45,165 INFO   Baseline mean P(completing) = 0.5376
+2026-06-12 17:33:49,108 INFO   Fgfr2       OE regen_gain=-0.0026  DEL regen_loss=-0.0000
+2026-06-12 17:34:54,672 INFO   Fgfr1       OE regen_gain=-0.0102  DEL regen_loss=-0.0000
+2026-06-12 17:36:01,278 INFO   Egfr        OE regen_gain=-0.0009  DEL regen_loss=-0.0002
+2026-06-12 17:37:08,300 INFO   Erbb2       OE regen_gain=-0.0004  DEL regen_loss=-0.0003
+2026-06-12 17:38:15,512 INFO   Erbb3       OE regen_gain=-0.0051  DEL regen_loss=-0.0001
+2026-06-12 17:39:22,850 INFO   Met         OE regen_gain=-0.0028  DEL regen_loss=+0.0001
+2026-06-12 17:40:30,062 INFO   Igf1r       OE regen_gain=-0.0077  DEL regen_loss=+0.0000
+2026-06-12 17:41:37,351 INFO   Axl         OE regen_gain=-0.0178  DEL regen_loss=-0.0001
+2026-06-12 17:42:44,414 INFO   Bmpr1a      OE regen_gain=-0.0009  DEL regen_loss=-0.0000
+2026-06-12 17:43:51,452 INFO   Bmpr2       OE regen_gain=+0.0007  DEL regen_loss=-0.0001
+2026-06-12 17:44:58,439 INFO   Acvrl1      OE regen_gain=-0.0099  DEL regen_loss=+0.0000
+2026-06-12 17:46:05,440 INFO   Tgfbr1      OE regen_gain=-0.0101  DEL regen_loss=-0.0001
+2026-06-12 17:47:12,499 INFO   Tgfbr2      OE regen_gain=-0.0042  DEL regen_loss=-0.0001
+2026-06-12 17:48:19,580 INFO   Pdgfra      OE regen_gain=-0.0048  DEL regen_loss=-0.0000
+2026-06-12 17:49:26,690 INFO   Pdgfrb      OE regen_gain=-0.0060  DEL regen_loss=+0.0000
+2026-06-12 17:50:33,822 INFO   Notch1      OE regen_gain=-0.0097  DEL regen_loss=-0.0003
+2026-06-12 17:51:40,898 INFO   Notch2      OE regen_gain=-0.0038  DEL regen_loss=-0.0001
+2026-06-12 17:52:47,853 INFO   Fzd1        OE regen_gain=-0.0036  DEL regen_loss=+0.0001
+2026-06-12 17:53:54,936 INFO   Fzd2        OE regen_gain=+0.0080  DEL regen_loss=-0.0000
+2026-06-12 17:55:02,542 INFO   Itgb1       OE regen_gain=-0.0216  DEL regen_loss=-0.0001
+2026-06-12 17:56:10,006 INFO   App         OE regen_gain=-0.0040  DEL regen_loss=-0.0004
+2026-06-12 17:57:17,272 INFO   Sdc1        OE regen_gain=-0.0016  DEL regen_loss=-0.0007
+2026-06-12 17:58:24,702 INFO   Sdc4        OE regen_gain=-0.0089  DEL regen_loss=-0.0004
+2026-06-12 17:59:32,103 INFO   Cd9         OE regen_gain=-0.0158  DEL regen_loss=-0.0004
+2026-06-12 18:00:39,508 INFO   Cd63        OE regen_gain=-0.0101  DEL regen_loss=-0.0000
+2026-06-12 18:01:46,741 INFO   Osmr        OE regen_gain=-0.0122  DEL regen_loss=+0.0000
+2026-06-12 18:02:53,912 INFO   Nrp1        OE regen_gain=-0.0082  DEL regen_loss=+0.0000
+2026-06-12 18:04:01,194 INFO   Il6st       OE regen_gain=-0.0233  DEL regen_loss=+0.0000
+2026-06-12 18:04:01,205 INFO 06_geneformer.py complete.
+
+=== POSITIVE CONTROL: Fgfr2 (in silico Fgf10-KO equivalent) ===
+  OE  regen_gain : -0.0026   (expect > 0)
+  DEL regen_loss : -0.0000  (expect < 0  ≡ Fgf10-KO)
+WARNING: positive control not clean — OE ok=False, DEL ok=True. Classifier may need more epochs or class-balancing.
+
+Top candidates by OE regen_gain (overexpression → completing fate):
+symbol      ensembl_id  regen_gain  n_expressing
+  Fzd2 ENSG00000180340    0.007994            69
+ Bmpr2 ENSG00000204217    0.000676           234
+ Erbb2 ENSG00000141736   -0.000353           110
+  Egfr ENSG00000146648   -0.000852            92
+Bmpr1a ENSG00000107779   -0.000937           399
+  Sdc1 ENSG00000115884   -0.001632          1947
+ Fgfr2 ENSG00000066468   -0.002587           462
+   Met ENSG00000105976   -0.002813           598
+  Fzd1 ENSG00000157240   -0.003593            82
+Notch2 ENSG00000134250   -0.003814           222
+   App ENSG00000142192   -0.003956          2284
+Tgfbr2 ENSG00000163513   -0.004184           429
+Pdgfra ENSG00000134853   -0.004753             1
+ Erbb3 ENSG00000065361   -0.005063           302
+Pdgfrb ENSG00000113721   -0.006046             2
+ Igf1r ENSG00000140443   -0.007695            59
+  Nrp1 ENSG00000099250   -0.008183          1346
+  Sdc4 ENSG00000124145   -0.008919          1918
+Notch1 ENSG00000148400   -0.009674           196
+Acvrl1 ENSG00000139567   -0.009931            15
+  Cd63 ENSG00000135404   -0.010088          3025
+Tgfbr1 ENSG00000106799   -0.010125           196
+ Fgfr1 ENSG00000077782   -0.010237            43
+  Osmr ENSG00000145623   -0.012210           393
+   Cd9 ENSG00000010278   -0.015816          1920
+   Axl ENSG00000167601   -0.017834            61
+ Itgb1 ENSG00000150093   -0.021606          1740
+ Il6st ENSG00000134352   -0.023278           489
+
+Top candidates by DEL regen_loss (deletion → arrested fate):
+symbol      ensembl_id    regen_loss  n_expressing
+  Sdc1 ENSG00000115884 -7.369126e-04          1947
+   App ENSG00000142192 -4.386516e-04          2284
+  Sdc4 ENSG00000124145 -3.941726e-04          1918
+   Cd9 ENSG00000010278 -3.694010e-04          1920
+Notch1 ENSG00000148400 -2.829085e-04           196
+ Erbb2 ENSG00000141736 -2.594407e-04           110
+  Egfr ENSG00000146648 -2.164070e-04            92
+Tgfbr1 ENSG00000106799 -1.225158e-04           196
+Notch2 ENSG00000134250 -1.174191e-04           222
+ Itgb1 ENSG00000150093 -8.303648e-05          1740
+ Bmpr2 ENSG00000204217 -8.176098e-05           234
+Tgfbr2 ENSG00000163513 -7.597508e-05           429
+ Erbb3 ENSG00000065361 -7.164499e-05           302
+   Axl ENSG00000167601 -6.008310e-05            61
+Bmpr1a ENSG00000107779 -4.469241e-05           399
+  Fzd2 ENSG00000180340 -3.335605e-05            69
+  Cd63 ENSG00000135404 -8.985035e-06          3025
+ Fgfr2 ENSG00000066468 -8.147493e-07           462
+ Fgfr1 ENSG00000077782 -7.206136e-08            43
+Pdgfra ENSG00000134853 -1.401903e-09             1
+Pdgfrb ENSG00000113721  2.706952e-08             2
+Acvrl1 ENSG00000139567  4.417062e-08            15
+ Igf1r ENSG00000140443  1.280792e-06            59
+  Osmr ENSG00000145623  2.249039e-05           393
+  Nrp1 ENSG00000099250  4.794834e-05          1346
+ Il6st ENSG00000134352  4.956471e-05           489
+   Met ENSG00000105976  5.059682e-05           598
+  Fzd1 ENSG00000157240  8.277666e-05            82
