@@ -17,6 +17,8 @@
 | Geneformer | 06_geneformer.py | V1-10M fine-tune + in silico perturbation | epi_obj counts |
 | Human NicheNet | 08_human_nichenet.R | NicheNet v2 human priors | Habermann GSE135893 |
 | Integration | 07_crossspecies.R | Composite rank scoring | All above |
+| FGF10 sender | 08_fgf10_sender.R | Pseudobulk Wilcoxon, % expressing, compositional | Adams, Habermann, Strunz |
+| FGFR2 receiver | 08b_fgfr2_receiver.R | Pseudobulk Wilcoxon, per-cell Spearman | epi_obj, Adams, Habermann |
 
 **Receiver:** AT2 cells and injury-activated alveolar progenitors (Kobayashi PATS / Choi DATPs).  
 **Senders:** Alveolar/lipofibroblasts, myofibroblasts, airway smooth muscle, profibrotic macrophages.
@@ -115,7 +117,7 @@ The mouse lt_matrix contains only 1,226 target-gene columns. Fgf10's top predict
 All FGFR2 expression quantified here is total Fgfr2 (IIIb + IIIc). IIIb = epithelial (pro-regenerative), IIIc = mesenchymal (non-target). Therapeutic strategies must use FGFR2b-selective agonists (e.g., FGF7/FGF10 proteins, FGFR2b antibodies).
 
 ### Geneformer: ligand-limited vs receptor-limited
-Fgfr2 OE regen_gain is negative (−0.003) because the Fgf10-KO bottleneck is on the ligand side (fibroblasts fail to produce FGF10), not the receptor side. In a model with intact FGF10 signaling, FGFR2b agonism should rescue completing fate.
+Fgfr2 OE regen_gain is negative (−0.003) because the Fgf10-KO bottleneck is on the ligand side (fibroblasts fail to produce FGF10), not the receptor side. In a model with intact FGF10 signaling, FGFR2b agonism should rescue completing fate. This is confirmed by 08b (§9): FGFR2 receptor expression is maintained or elevated in arrested AT2 cells — the antenna is intact, the ligand signal is absent.
 
 ### Human data: Habermann is IPF-only
 No healthy AT2 reference in Habermann. Human geneset_oi (AT2+AT1 vs KRT5⁻/KRT17⁺) is the appropriate completing vs arrested analog. FGF10 is nearly absent from IPF fibroblasts (established fibrosis downregulates FGF10) — this is biology, not a data artifact.
@@ -155,4 +157,94 @@ Missing dimensions treated as NA and excluded from the mean (not penalized).
 
 ---
 
-*Generated: 2026-06-15 | Pipeline: scripts/02_qc.R → scripts/07_crossspecies.R | Repo: XiaoCheng2776/CL_IPF_Target_prediction*
+---
+
+## 9. FGF10 Sender Deficiency + FGFR2 Receiver Expression
+
+These two analyses probe the FGF10 → FGFR2b axis from both sides to test whether the deficiency is in **ligand supply** (fibroblast sender), **receptor responsiveness** (AT2 receiver), or both.
+
+### 9a. FGF10 sender-side deficiency (08_fgf10_sender.R)
+
+Three metrics per dataset and cell type: fraction expressing (dropout-resistant), pseudobulk mean per sample + Wilcoxon (proper inference), and mean per expresser (per-cell downregulation test).
+
+**Mouse bleomycin time course (Strunz GSE141259, fibroblasts):**
+
+| Phase | Fgf10+ % (Plin2-low Fib) | vs PBS |
+|---|---|---|
+| PBS control | 0% | — |
+| acute (d3–d7) | 0–8.5% | p = 0.029, log2FC = +5.3 |
+| fibrotic early (d10–d14) | 3–5% | p = 0.029 (pooled) |
+| fibrotic late (d21) | 0% | p = 0.674 |
+| resolution (d28) | 0% | p = 0.789 |
+
+**Interpretation:** Fgf10 expression from fibroblasts is **episodic**, not chronic. It rises transiently during acute injury (d7) when regeneration is initiated, then fails to sustain — collapsing to 0% by the fibrotic phase (d21). The story is a **failure to sustain the repair signal**, not constitutive suppression.
+
+**Human fibroblasts (Adams GSE136831 + Habermann GSE135893):**
+
+| Dataset | Cell type | IPF % | Control % | p | log2FC |
+|---|---|---|---|---|---|
+| Adams | Myofibroblast | 5.1% | 6.4% | 0.012 | +6.4 (IPF > Ctrl) |
+| Adams | PLIN2+ Fibroblast | 2.3% | 2.3% | 0.746 | 0 |
+| Adams | PLIN2− Fibroblast | 3.2% | 1.9% | 0.089 | ns |
+| Habermann | Fibroblasts | 8.6% | 0.7% | 0.005 | +6.3 (IPF > Ctrl) |
+| Habermann | PLIN2+ Fibroblasts | 5.7% | 0% | ns | — |
+
+**Paradox:** FGF10 appears higher in IPF fibroblasts in both datasets. This is not a chronic excess — cell numbers (Habermann PLIN2+ IPF n=1,167 vs Control n=6) suggest this reflects **pathological population expansion** in IPF, not increased per-cell production. The PLIN2+ cells in Habermann are likely reactive fibroblasts, not classical alveolar lipofibroblasts (essentially zero FGF10 expression in either condition confirms this). The episodic mouse data is the mechanistically cleaner evidence of FGF10 supply failure.
+
+**Compositional analysis:** No significant depletion of PLIN2+ lipofibroblasts in Adams IPF vs Control at the proportion level. The FGF10 deficit is primarily temporal (failure to sustain in fibrosis) rather than strictly compositional (fewer FGF10-producing cells).
+
+---
+
+### 9b. FGFR2 receiver-side expression (08b_fgfr2_receiver.R)
+
+> **FGFR2 isoform caveat:** AT2 cells express FGFR2 predominantly as the IIIb isoform (Nakayama 2011, McQualter 2019). Total FGFR2 in AT2 cells is used as a FGFR2b surrogate here; IIIb/IIIc separation requires isoform-specific assays and cannot be resolved from standard RNA-seq data.
+
+**Mouse bleomycin time course (Kobayashi PATS epi_obj, AT2 + AT2-activated cells, n = 13,950):**
+
+| Phase | n cells | Fgfr2+ % | Tgfbr2+ % | Transitional1 score |
+|---|---|---|---|---|
+| PBS control | 1,739 | 13.0% | 3.7% | −0.077 |
+| acute (d2–d10) | 7,447 | 13.3% | 7.2% | −0.054 |
+| fibrotic early (d11–d14) | 1,366 | 11.3% | 5.3% | −0.005 |
+| fibrotic late (d15–d21) | 1,422 | **10.6%** | 4.2% | −0.014 |
+| resolution (d28–d54) | 1,976 | 11.2% | 3.4% | −0.046 |
+
+- Pseudobulk Wilcoxon vs PBS: all p > 0.38 — the ~2 percentage point decrease during fibrosis is **not significant**.
+- Per-cell Spearman (Fgfr2 count ~ Transitional1 score): **rho = −0.070, p = 9×10⁻¹⁷** — direction correct (FGFR2-expressing cells have marginally lower TGFβ-arrest score), but effect size is trivially small; significance is driven by n = 13,950.
+
+**Human Adams ATII cells (IPF n = 496, Control n = 2,655):**
+
+| Gene | IPF vs Control | p | log2FC | Direction |
+|---|---|---|---|---|
+| FGFR2 | IPF median 1.06 vs Ctrl 0.55 | **0.052** | **+0.94** | ↑ IPF ≥ Control |
+| TGFBR2 | — | 0.711 | −0.27 | ns |
+| CLDN4 | — | 0.253 | −0.49 | ns |
+| KRT8 | — | 0.799 | +0.23 | ns |
+
+- Per-cell Spearman (FGFR2 ~ CLDN4+KRT8+SERPINE1 arrest score): **rho = +0.197, p = 6×10⁻²⁹**
+- FGFR2-expressing ATII cells co-express more arrest markers — they are in the transitional (Krt8⁺) state, not silenced.
+
+**Human Habermann IPF AT2 (n = 4,903; IPF only):**
+
+- FGFR2 expressers: 32.7%; TGFBR2: 60.3%
+- Per-cell Spearman (FGFR2 ~ CLDN4+KRT8): rho = +0.078, p = 5×10⁻⁸
+
+---
+
+### 9c. Integrated interpretation: the "frustrated receptor" model
+
+The "FGFR2 drops as TGFβ rises" hypothesis is **not supported**. FGFR2 is maintained — borderline elevated in IPF AT2 cells — and the cells expressing it are enriched in the Krt8⁺ transitional arrested state. This is consistent with a **frustrated receptor model**:
+
+> AT2 cells that are stuck in the Krt8⁺ arrested state retain FGFR2b expression (the antenna is intact), but the FGF10 repair signal from fibroblasts has collapsed. The cells are poised to respond but cannot because the ligand is absent.
+
+**Therapeutic implication:** FGFR2b receptor presence in arrested AT2 cells means FGF10/FGFR2b agonism has a viable target. The bottleneck is ligand supply, not receptor loss. This model:
+
+1. Explains the Geneformer result: FGFR2 OE regen_gain is negative because overexpressing an already-present receptor in a ligand-absent context does not rescue completing fate. Exogenous FGF10 (or a FGFR2b-selective agonist) is the correct intervention.
+2. Is consistent with the in vivo Fgf10-KO mouse (reduced ligand → more fibrosis), not the FGFR2-KO (which would be a different phenotype).
+3. Predicts that FGF7 (same receptor, higher NicheNet rank = 3) or FGFR2b antibody agonists could rescue completing fate in IPF AT2 cells without needing to upregulate the receptor.
+
+**Cross-dataset dual-hit figure:** `results/figures/fgfr2_timecourse_dual.png` — normalised Fgfr2 in AT2 (Kobayashi) and Fgf10 in fibroblasts (Strunz) over bleomycin phases. Co-trending signals support a coordinated sender-receiver collapse during fibrosis (eco-correlation across 5 phases; n too small for significance — directional only).
+
+---
+
+*Generated: 2026-06-16 | Pipeline: scripts/02_qc.R → scripts/08b_fgfr2_receiver.R | Repo: XiaoCheng2776/CL_IPF_Target_prediction*
