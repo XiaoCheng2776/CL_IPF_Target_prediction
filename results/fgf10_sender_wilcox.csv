@@ -1,0 +1,10 @@
+"dataset","subtype","p_value","median_ipf","median_ctrl","log2fc"
+"Adams_GSE136831","Fibroblast (PLIN2-)",0.0891686050336379,0,0,0
+"Adams_GSE136831","Myofibroblast",0.011913428335729,0.0816326530612245,0,6.36864008356125
+"Adams_GSE136831","PLIN2+ Fibroblast (lipofibroblast)",0.745810082119183,0,0,0
+"Habermann_GSE135893","Fibroblasts",0.00469091875095803,0.0789473684210526,0,6.3209786410585
+"Habermann_GSE135893","PLIN2+ Fibroblasts",0.449102232975529,0,0,0
+"Habermann_GSE135893","Myofibroblasts",0.640080576741776,0.0925531914893617,0.0333333333333333,1.44617693907295
+"Strunz_mouse_GSE141259","AllFibroblasts_fibrotic_early",0.0290237994742432,0.0392156862745098,0,5.32968643450836
+"Strunz_mouse_GSE141259","AllFibroblasts_fibrotic_late",0.674150223875841,0,0,0
+"Strunz_mouse_GSE141259","AllFibroblasts_resolution",0.789268026134281,0,0,0

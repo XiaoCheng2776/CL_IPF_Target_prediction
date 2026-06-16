@@ -28,6 +28,8 @@ In IPF, alveolar type-2 (AT2) progenitor cells fail to complete regeneration and
 06_geneformer.py        — Geneformer V1-10M fine-tune + in silico perturbation
 07_crossspecies.R       — composite scoring, cross-species conservation
 08_human_nichenet.R     — NicheNet v2 human (Habermann GSE135893)
+08_fgf10_sender.R       — FGF10 sender-side deficiency in IPF fibroblasts
+08b_fgfr2_receiver.R    — FGFR2 receiver-side expression in AT2 cells (dual-hit model)
 ```
 
 Run scripts in order; inspect outputs before proceeding. See [CLAUDE.md](CLAUDE.md) for per-step instructions and guardrails.
