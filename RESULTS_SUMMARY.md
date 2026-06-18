@@ -19,6 +19,7 @@
 | Integration | 07_crossspecies.R | Composite rank scoring | All above |
 | FGF10 sender | 08_fgf10_sender.R | Pseudobulk Wilcoxon, % expressing, compositional | Adams, Habermann, Strunz |
 | FGFR2 receiver | 08b_fgfr2_receiver.R | Pseudobulk Wilcoxon, per-cell Spearman | epi_obj, Adams, Habermann |
+| Synthesis figure | 09c_synthesis_figure.R | Lollipop chart, two-arm layout | candidates_ranked.csv |
 
 **Receiver:** AT2 cells and injury-activated alveolar progenitors (Kobayashi PATS / Choi DATPs).  
 **Senders:** Alveolar/lipofibroblasts, myofibroblasts, airway smooth muscle, profibrotic macrophages.
@@ -247,4 +248,55 @@ The "FGFR2 drops as TGFβ rises" hypothesis is **not supported**. FGFR2 is maint
 
 ---
 
-*Generated: 2026-06-16 | Pipeline: scripts/02_qc.R → scripts/08b_fgfr2_receiver.R | Repo: XiaoCheng2776/CL_IPF_Target_prediction*
+---
+
+## 10. Conserved-Target Synthesis Figure (09c_synthesis_figure.R)
+
+**Outputs:** `results/figures/Fig_synthesis.png` (300 dpi) + `Fig_synthesis.pdf` (cairo_pdf, Unicode-safe)
+
+The synthesis figure is the single-panel summary that bridges the computational screen to experimental prioritization. It displays all 14 scored candidates from `candidates_ranked.csv` in a horizontal lollipop layout with x = composite score (0–1) and explicit NicheNet rank annotations (mouse / human) for each target.
+
+### 10a. Layout and sections
+
+| Section | Colour | Candidates | Criterion for inclusion |
+|---|---|---|---|
+| **Predicted stimulate** (top arm) | #E07B39 (orange) | Sdc1, Erbb2, Egfr, Sdc4, Fgfr2★, Cd9 | conserved + human NicheNet evidence + agonist direction |
+| **Inhibit** (middle arm) | #4472B8 (blue) | App, Tgfbr2 | conserved + block_TGFb direction supported both species |
+| **Mouse-only** (grey box, bottom) | #9E9E9E | Cd74 (?), Ramp1 (↑?), Fzd2 (↑?), Bmpr2 (↑?), Nrp1 (↑?), Tgfbr1 (↓) | mouse-only evidence; no human NicheNet rank |
+
+Fgfr2 is coloured #B83232 (brick red) and labelled with ★ PC to mark it as the positive control throughout the figure.
+
+### 10b. Conserved agonist arm — key take-aways
+
+| Receptor | Composite | Mouse NN | Human NN | Highlighted observation |
+|---|---|---|---|---|
+| Sdc1 | 0.850 | #8 | **#2** | Strongest human NicheNet signal of any agonist; presents FGF10 to FGFR2b |
+| Erbb2 | 0.821 | — | #6 | Pure human NicheNet + Geneformer DEL; AREG/HBEGF repair axis |
+| Egfr | 0.796 | — | #6 | Same EGF-family axis as ERBB2; conserved AREG/HBEGF/CDCP1 |
+| Sdc4 | 0.710 | #8 | **#2** | Same syndecan/ANGPTL4 axis as SDC1; lower Geneformer signal |
+| Fgfr2 ★ | 0.603 | #3 | #10 | Positive control; composite depressed by ligand-limited Geneformer (§6/§9c) |
+| Cd9 | 0.551 | #9 | #6 | HBEGF tetraspanin co-receptor; consistent but lower overall score |
+
+**Direction caveat (agonist arm):** therapeutic direction is predicted from NicheNet ligand-activity and known receptor biology. Geneformer in silico perturbation (overexpression arm) requires a dedicated GPU run with the full fine-tuned model; existing OE scores were generated from a subset model and have not been validated. The block arm (INHIBIT) does not carry this caveat — TGFβ→Krt8⁺ arrest is mechanistically established and both NicheNet and Geneformer deletion scores support it.
+
+### 10c. Conserved block arm
+
+| Receptor | Composite | Mouse NN | Human NN | Rationale |
+|---|---|---|---|---|
+| App | 0.863 | **#1** | #5 | Highest mouse NicheNet rank of all candidates; TGFB1→APP pro-arrest axis conserved |
+| Tgfbr2 | 0.682 | — | #5 | Direct TGFβ type-II receptor → SMAD2/3 → Krt8 upregulation; mechanistically the most direct block target |
+
+App's #1 mouse NicheNet rank reflects that TGFB1 (the top sender ligand) signals strongly through APP in AT2 cells — antagonizing APP may divert TGFβ-activated cells away from the arrested state. Tgfbr2 blockade (e.g., galunisertib analogs) is the most mechanistically interpretable intervention.
+
+### 10d. Mouse-only section
+
+Six candidates are greyed out and labelled "awaiting human validation." They were detected in the mouse NicheNet and/or Geneformer screens but lack supporting human NicheNet ranks (no human evidence in Adams or Habermann). They are not suitable for immediate experimental prioritization but should be revisited if human sorted-AT2 data (e.g., IPF surgical lung biopsies with epithelial enrichment) becomes available.
+
+Notable entries:
+- **Cd74** (composite 1.000) — sole CellChat MIF-receptor hit; no NicheNet or Geneformer support; high composite is an artefact of a perfect CellChat score on one dimension.
+- **Ramp1** (0.897) — ADM/adrenomedullin axis; mouse NicheNet rank 2; human data absent.
+- **Fzd2** (0.722) — highest Geneformer OE regen_gain (+0.008) of any candidate; WNT→AT2 self-renewal; no human NicheNet rank.
+
+---
+
+*Generated: 2026-06-18 | Pipeline: scripts/02_qc.R → scripts/09c_synthesis_figure.R | Repo: XiaoCheng2776/CL_IPF_Target_prediction*
