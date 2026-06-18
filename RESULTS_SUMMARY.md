@@ -20,6 +20,7 @@
 | FGF10 sender | 08_fgf10_sender.R | Pseudobulk Wilcoxon, % expressing, compositional | Adams, Habermann, Strunz |
 | FGFR2 receiver | 08b_fgfr2_receiver.R | Pseudobulk Wilcoxon, per-cell Spearman | epi_obj, Adams, Habermann |
 | Synthesis figure | 09c_synthesis_figure.R | Lollipop chart, two-arm layout | candidates_ranked.csv |
+| Cross-species scatter | 09d_crossspecies_scatter.R | Four-quadrant scatter, -log₁₀(rank/N) | candidates_ranked.csv |
 
 **Receiver:** AT2 cells and injury-activated alveolar progenitors (Kobayashi PATS / Choi DATPs).  
 **Senders:** Alveolar/lipofibroblasts, myofibroblasts, airway smooth muscle, profibrotic macrophages.
@@ -299,4 +300,65 @@ Notable entries:
 
 ---
 
-*Generated: 2026-06-18 | Pipeline: scripts/02_qc.R → scripts/09c_synthesis_figure.R | Repo: XiaoCheng2776/CL_IPF_Target_prediction*
+---
+
+## 11. Cross-Species NicheNet Scatter (09d_crossspecies_scatter.R)
+
+**Outputs:** `results/figures/Fig_crossspecies_scatter.png` (300 dpi) + `.pdf`
+
+### 11a. Design
+
+The figure answers a single question: which receptors have strong ligand-activity evidence in **both** mouse and human NicheNet, and which are species-restricted?
+
+| Axis | Formula | Pool size N | Hit threshold |
+|---|---|---|---|
+| x (mouse) | −log₁₀(mouse rank / 154) | N = 154 ligands (NicheNet v2 Strunz) | score ≥ 1.19 (rank ≤ 10, top 6.5%) |
+| y (human) | −log₁₀(human rank / 361) | N = 361 ligands (Habermann NicheNet) | score ≥ 1.56 (rank ≤ 10, top 2.8%) |
+
+The asymmetric thresholds are intentional: the human pool is 2.3× larger (361 vs 154), so the human dashed line sits higher on the y-axis, correctly communicating that a top-10 human rank is a stricter filter. The hit-threshold rule is printed on the plot.
+
+Point encoding:
+- **Filled circle** — scored in both networks (placed in main quadrant)
+- **Open triangle △** — mouse rank only; plotted in bottom grey strip (y < 0), labelled "not assessable in human"
+- **Open diamond ◇** — human rank only; plotted in left grey strip (x < 0), labelled "not assessable in mouse"
+- **Excluded** — 13 receptors with no NicheNet rank in either species (CellChat/Geneformer-only: Axl, Cd74, Cldn3, Fzd1, Fzd2, Igf1r, Met, Notch1, Notch2, Pdgfra, Pdgfrb, Tgfbr1, Acvrl1)
+
+### 11b. Quadrant results
+
+**Conserved hits (top-right, both ≥ threshold)** — 6 receptors from both-scored set:
+
+| Receptor | Mouse rank | Human rank | x score | y score | Direction |
+|---|---|---|---|---|---|
+| App | 1 | 5 | 2.19 | 1.86 | Block (TGFβ→APP arrest axis) |
+| Itgb1 | 1 | 2 | 2.19 | 2.26 | **Uncertain** (ANGPTL4 agonist + TGFB1 block) |
+| Sdc1 | 8 | 2 | 1.28 | 2.26 | Agonist |
+| Sdc4 | 8 | 2 | 1.28 | 2.26 | Agonist (identical coords to Sdc1) |
+| Fgfr2 ★ | 3 | 10 | 1.71 | 1.56 | Agonist — **positive control** |
+| Cd9 | 9 | 6 | 1.23 | 1.78 | Agonist |
+
+Itgb1 appears in the conserved quadrant with the highest combined evidence of any receptor (mouse rank 1, human rank 2), but its therapeutic direction is uncertain — both ANGPTL4 (pro-regenerative via AT2 survival) and TGFB1 (pro-arrest) signal through ITGB1 in AT2 cells. It is shown in grey and not included in the prioritized agonist or block lists without further mechanistic resolution.
+
+**Mouse-only hit (both-scored, x ≥ threshold but y < threshold):** Sort1 (mouse rank 6, human rank 15 — above mouse threshold, below human).
+
+**Human-only hit (both-scored, y ≥ threshold but x < threshold):** Cd63 (mouse rank 11, human rank 10 — just below mouse threshold at x = 1.15 vs threshold 1.19).
+
+**Strips — single-species evidence:**
+
+| Region | Receptors above threshold | Receptors below threshold |
+|---|---|---|
+| Mouse-only strip (△) | Ramp1 (rank 2), Nrp1 (rank 3) | Itga9, Ager, Alcam, F11r |
+| Human-only strip (◇) | Erbb2 (rank 6), Egfr (rank 6), Tgfbr2 (rank 5), Osmr (rank 9), Il6st (rank 9) | Cd36, Erbb3, Bmpr2, Bmpr1a, Fgfr1 |
+
+### 11c. Key observations
+
+1. **No receptor scored in both networks fails to reach the human threshold while passing the mouse threshold** — except Sort1 (uncertain direction, grey). The conserved-quadrant receptors are consistently strong in both species. This argues against substantial species-specific false positives in the main candidates.
+
+2. **EGFR-family receptors (Erbb2, Egfr) lack mouse NicheNet rank** not because mouse evidence is absent, but because the mouse geneset_oi (AT2-completing vs Krt8⁺-arrested) does not strongly rank EGFR ligands (AREG/HBEGF are not top mouse fibroblast outputs in Strunz). Their human evidence (rank 6 in both) is from fibroblast/macrophage AREG/HBEGF in Adams/Habermann. This is a real species difference in sender cell composition, not a data artifact.
+
+3. **Ramp1 and Nrp1 in the mouse-only strip** both exceed the mouse threshold (ranks 2 and 3 respectively) but have no human NicheNet rank. Both are co-receptors that amplify growth factor signaling (CGRP/ADM for Ramp1; FGF/VEGF for Nrp1). Human validation requires sorted AT2 NicheNet or isoform-aware receptor expression data.
+
+4. **Tgfbr2 in the human-only strip** (rank 5 human, no mouse rank) is informative: TGFβ→TGFBR2 signaling is a top human NicheNet hit but the mouse analysis does not recover it as a top receiver-expressed target. This likely reflects underrepresentation of the block-arm biology in the mouse completing vs arrested geneset (Krt8⁺ ADI cells are the arrested population, but SMAD2/3 target genes may not concentrate in the completing geneset).
+
+---
+
+*Generated: 2026-06-18 | Pipeline: scripts/02_qc.R → scripts/09d_crossspecies_scatter.R | Repo: XiaoCheng2776/CL_IPF_Target_prediction*
